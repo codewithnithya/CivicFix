@@ -5,3 +5,4 @@ streamlit-geolocation
 transformers
 torch
 torchvision
+ImageHash
