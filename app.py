@@ -9,16 +9,8 @@ import math
 import json
 from difflib import SequenceMatcher
 
-
-# =========================================================
-# PAGE CONFIG
-# =========================================================
-
-st.set_page_config(
-    page_title="CivicFix",
-    page_icon="🏙️",
-    layout="wide"
-)
+import folium
+from streamlit_folium import st_folium
 
 
 # =========================================================
@@ -47,54 +39,54 @@ except ImportError:
 
 
 # =========================================================
-# FILE SETTINGS
+# PAGE CONFIG
+# =========================================================
+
+st.set_page_config(
+    page_title="CivicFix",
+    page_icon="🏙️",
+    layout="wide"
+)
+
+
+# =========================================================
+# DATABASE FILE
 # =========================================================
 
 DATA_FILE = "complaints.json"
 
 
 # =========================================================
-# LOAD COMPLAINTS
+# LOAD REPORTS
 # =========================================================
 
 def load_reports():
 
-    if os.path.exists(DATA_FILE):
+    if not os.path.exists(DATA_FILE):
+        return []
 
-        try:
+    try:
+        with open(DATA_FILE, "r", encoding="utf-8") as file:
+            data = json.load(file)
 
-            with open(
-                DATA_FILE,
-                "r",
-                encoding="utf-8"
-            ) as file:
-
-                data = json.load(file)
-
-                if isinstance(data, list):
-
-                    return data
-
-        except Exception:
+            if isinstance(data, list):
+                return data
 
             return []
 
-    return []
+    except Exception:
+        return []
 
 
 # =========================================================
-# SAVE COMPLAINTS
+# SAVE REPORTS
 # =========================================================
 
 def save_reports(reports):
 
     try:
 
-        with open(
-            DATA_FILE,
-            "w",
-            encoding="utf-8"
-        ) as file:
+        with open(DATA_FILE, "w", encoding="utf-8") as file:
 
             json.dump(
                 reports,
@@ -103,11 +95,9 @@ def save_reports(reports):
                 ensure_ascii=False
             )
 
-    except Exception as error:
+    except Exception as e:
 
-        st.error(
-            f"Could not save complaint data: {error}"
-        )
+        st.error(f"Could not save complaint: {e}")
 
 
 # =========================================================
@@ -119,25 +109,21 @@ SESSION_DEFAULTS = {
     "reports": load_reports(),
 
     "latitude": None,
-
     "longitude": None,
 
     "voice_text": "",
 
     "image_ai_issue": None,
-
     "image_confidence": 0,
 
     "image_hash": None,
 
     "image_security_checked": False,
-
     "image_security_status": "Not Checked",
 
     "image_metadata": {},
 
-    "duplicate_result": None,
-
+    "duplicate_result": None
 }
 
 
@@ -152,9 +138,7 @@ for key, value in SESSION_DEFAULTS.items():
 # CSS
 # =========================================================
 
-st.markdown(
-    """
-
+st.markdown("""
 <style>
 
 .stApp {
@@ -167,8 +151,8 @@ st.markdown(
 
 .info-box {
     background-color: #e8f1ff;
-    padding: 15px;
-    border-radius: 10px;
+    padding: 18px;
+    border-radius: 12px;
     margin-bottom: 15px;
 }
 
@@ -193,10 +177,7 @@ st.markdown(
 }
 
 </style>
-
-""",
-    unsafe_allow_html=True
-)
+""", unsafe_allow_html=True)
 
 
 # =========================================================
@@ -206,262 +187,17 @@ st.markdown(
 LANGUAGES = {
 
     "🇬🇧 English": "en-IN",
-
     "🇮🇳 తెలుగు (Telugu)": "te-IN",
-
     "🇮🇳 हिन्दी (Hindi)": "hi-IN",
-
     "🇮🇳 اردو (Urdu)": "ur-IN",
-
     "🇮🇳 தமிழ் (Tamil)": "ta-IN",
-
     "🇮🇳 ಕನ್ನಡ (Kannada)": "kn-IN",
-
     "🇮🇳 മലയാളം (Malayalam)": "ml-IN",
-
     "🇮🇳 বাংলা (Bengali)": "bn-IN",
-
     "🇮🇳 मराठी (Marathi)": "mr-IN",
-
     "🇮🇳 ગુજરાતી (Gujarati)": "gu-IN",
-
     "🇮🇳 ਪੰਜਾਬੀ (Punjabi)": "pa-IN"
-
 }
-
-
-# =========================================================
-# TRANSLATIONS
-# =========================================================
-
-TRANSLATIONS = {
-
-
-    # =====================================================
-    # ENGLISH
-    # =====================================================
-
-    "🇬🇧 English": {
-
-        "report_title": "📢 Report a Civic Issue",
-
-        "citizen_details": "📱 Citizen Details",
-
-        "phone": "Your Phone Number",
-
-        "phone_placeholder":
-        "Enter your 10 digit mobile number",
-
-        "problem":
-        "🚨 What is the Civic Problem?",
-
-        "select_issue":
-        "Select Civic Issue",
-
-        "voice":
-        "🎤 Speak Your Complaint",
-
-        "voice_info":
-        "🎤 Voice recording is optional.",
-
-        "record_voice":
-        "🎤 Record your complaint (Optional)",
-
-        "convert_voice":
-        "📝 Convert Voice to Text",
-
-        "details":
-        "📝 Additional Details",
-
-        "description":
-        "Describe the problem (Optional)",
-
-        "description_placeholder":
-        "You can leave this empty.",
-
-        "upload":
-        "📸 Upload Evidence",
-
-        "upload_image":
-        "Upload a photo of the civic problem",
-
-        "check_image":
-        "🤖 Check Image Matches Issue",
-
-        "gps":
-        "📍 Mandatory GPS Location",
-
-        "gps_warning":
-        "⚠️ GPS is required so the worker can reach the exact location.",
-
-        "submit_section":
-        "🚀 Submit Complaint",
-
-        "submit":
-        "🚨 Submit Civic Complaint",
-
-        "navigate":
-        "Navigate"
-
-    },
-
-
-    # =====================================================
-    # TELUGU
-    # =====================================================
-
-    "🇮🇳 తెలుగు (Telugu)": {
-
-        "report_title":
-        "📢 పౌర సమస్యను నివేదించండి",
-
-        "citizen_details":
-        "📱 పౌరుల వివరాలు",
-
-        "phone":
-        "మీ ఫోన్ నంబర్",
-
-        "phone_placeholder":
-        "మీ 10 అంకెల మొబైల్ నంబర్ నమోదు చేయండి",
-
-        "problem":
-        "🚨 పౌర సమస్య ఏమిటి?",
-
-        "select_issue":
-        "సమస్యను ఎంచుకోండి",
-
-        "voice":
-        "🎤 మీ ఫిర్యాదును మాట్లాడండి",
-
-        "voice_info":
-        "🎤 వాయిస్ రికార్డింగ్ ఐచ్చికం.",
-
-        "record_voice":
-        "🎤 మీ ఫిర్యాదును రికార్డ్ చేయండి",
-
-        "convert_voice":
-        "📝 వాయిస్‌ను టెక్స్ట్‌గా మార్చండి",
-
-        "details":
-        "📝 అదనపు వివరాలు",
-
-        "description":
-        "సమస్యను వివరించండి",
-
-        "description_placeholder":
-        "ఖాళీగా ఉంచవచ్చు.",
-
-        "upload":
-        "📸 ఆధారాన్ని అప్‌లోడ్ చేయండి",
-
-        "upload_image":
-        "సమస్యకు సంబంధించిన ఫోటో అప్‌లోడ్ చేయండి",
-
-        "check_image":
-        "🤖 చిత్రం సమస్యతో సరిపోతుందా చూడండి",
-
-        "gps":
-        "📍 తప్పనిసరి GPS స్థానం",
-
-        "gps_warning":
-        "⚠️ సరైన ప్రదేశానికి చేరుకోవడానికి GPS అవసరం.",
-
-        "submit_section":
-        "🚀 ఫిర్యాదు సమర్పించండి",
-
-        "submit":
-        "🚨 పౌర ఫిర్యాదును సమర్పించండి",
-
-        "navigate":
-        "నావిగేట్ చేయండి"
-
-    },
-
-
-    # =====================================================
-    # HINDI
-    # =====================================================
-
-    "🇮🇳 हिन्दी (Hindi)": {
-
-        "report_title":
-        "📢 नागरिक समस्या दर्ज करें",
-
-        "citizen_details":
-        "📱 नागरिक विवरण",
-
-        "phone":
-        "आपका फोन नंबर",
-
-        "phone_placeholder":
-        "अपना 10 अंकों का मोबाइल नंबर दर्ज करें",
-
-        "problem":
-        "🚨 नागरिक समस्या क्या है?",
-
-        "select_issue":
-        "समस्या चुनें",
-
-        "voice":
-        "🎤 अपनी शिकायत बोलें",
-
-        "voice_info":
-        "🎤 वॉयस रिकॉर्डिंग वैकल्पिक है।",
-
-        "record_voice":
-        "🎤 अपनी शिकायत रिकॉर्ड करें",
-
-        "convert_voice":
-        "📝 आवाज़ को टेक्स्ट में बदलें",
-
-        "details":
-        "📝 अतिरिक्त विवरण",
-
-        "description":
-        "समस्या का विवरण दें",
-
-        "description_placeholder":
-        "इसे खाली छोड़ सकते हैं।",
-
-        "upload":
-        "📸 प्रमाण अपलोड करें",
-
-        "upload_image":
-        "समस्या की फोटो अपलोड करें",
-
-        "check_image":
-        "🤖 जांचें कि फोटो समस्या से मेल खाती है",
-
-        "gps":
-        "📍 अनिवार्य GPS स्थान",
-
-        "gps_warning":
-        "⚠️ कर्मचारी को सही स्थान तक पहुंचने के लिए GPS आवश्यक है।",
-
-        "submit_section":
-        "🚀 शिकायत जमा करें",
-
-        "submit":
-        "🚨 नागरिक शिकायत जमा करें",
-
-        "navigate":
-        "नेविगेट करें"
-
-    }
-
-}
-
-
-# =========================================================
-# GET TRANSLATION
-# =========================================================
-
-def get_translation(language):
-
-    return TRANSLATIONS.get(
-        language,
-        TRANSLATIONS["🇬🇧 English"]
-    )
 
 
 # =========================================================
@@ -471,21 +207,13 @@ def get_translation(language):
 ISSUES = [
 
     "💧 Water Leakage",
-
     "🚰 Drainage / Sewer Problem",
-
     "🗑️ Garbage / Waste Problem",
-
     "🕳️ Pothole / Road Damage",
-
     "💡 Street Light Problem",
-
     "🌊 Water Overflow / Flooding",
-
     "🚦 Traffic Signal Problem",
-
     "🌳 Tree / Public Space Problem",
-
     "🏚️ Other Civic Issue"
 
 ]
@@ -543,9 +271,7 @@ def check_image_security(image, image_hash):
     result = {
 
         "status": "🟢 Normal",
-
         "risk_score": 0,
-
         "reasons": []
 
     }
@@ -554,7 +280,7 @@ def check_image_security(image, image_hash):
     metadata = get_image_metadata(image)
 
 
-    # EXACT DUPLICATE IMAGE
+    # EXACT DUPLICATE
 
     for report in st.session_state.reports:
 
@@ -563,10 +289,7 @@ def check_image_security(image, image_hash):
             result["risk_score"] += 100
 
             result["reasons"].append(
-
-                f"Exact same image already used in complaint "
-                f"{report.get('id')}"
-
+                f"Exact image already used in complaint {report['id']}"
             )
 
 
@@ -577,13 +300,11 @@ def check_image_security(image, image_hash):
         result["risk_score"] += 10
 
         result["reasons"].append(
-
             "No EXIF metadata found."
-
         )
 
 
-    # SOFTWARE CHECK
+    # SUSPICIOUS SOFTWARE
 
     software = metadata.get(
         "Software",
@@ -594,13 +315,9 @@ def check_image_security(image, image_hash):
     suspicious_words = [
 
         "stable diffusion",
-
         "midjourney",
-
         "dall-e",
-
         "generative",
-
         "photoshop generative"
 
     ]
@@ -613,9 +330,7 @@ def check_image_security(image, image_hash):
             result["risk_score"] += 60
 
             result["reasons"].append(
-
-                f"Suspicious generation software detected: {word}"
-
+                f"Possible AI generation software detected: {word}"
             )
 
 
@@ -625,11 +340,9 @@ def check_image_security(image, image_hash):
 
         result["status"] = "🔴 Blocked"
 
-
     elif result["risk_score"] >= 60:
 
         result["status"] = "🔴 High Risk"
-
 
     elif result["risk_score"] >= 20:
 
@@ -640,7 +353,7 @@ def check_image_security(image, image_hash):
 
 
 # =========================================================
-# IMAGE AI
+# LOAD AI MODEL
 # =========================================================
 
 @st.cache_resource
@@ -769,17 +482,14 @@ def calculate_distance(lat1, lon1, lat2, lon2):
     radius = 6371000
 
 
-    lat1 = math.radians(lat1)
+    lat1 = math.radians(float(lat1))
+    lon1 = math.radians(float(lon1))
 
-    lon1 = math.radians(lon1)
-
-    lat2 = math.radians(lat2)
-
-    lon2 = math.radians(lon2)
+    lat2 = math.radians(float(lat2))
+    lon2 = math.radians(float(lon2))
 
 
     dlat = lat2 - lat1
-
     dlon = lon2 - lon1
 
 
@@ -790,13 +500,9 @@ def calculate_distance(lat1, lon1, lat2, lon2):
         +
 
         math.cos(lat1)
-
         *
-
         math.cos(lat2)
-
         *
-
         math.sin(dlon / 2) ** 2
 
     )
@@ -863,7 +569,7 @@ def find_duplicate(
         distance = 999999
 
 
-        # EXACT IMAGE
+        # SAME IMAGE
 
         if report.get("image_hash") == image_hash:
 
@@ -885,19 +591,17 @@ def find_duplicate(
             )
 
 
-        # LOCATION
+        # GPS DISTANCE
 
         try:
 
             distance = calculate_distance(
 
                 latitude,
-
                 longitude,
 
-                float(report["latitude"]),
-
-                float(report["longitude"])
+                report["latitude"],
+                report["longitude"]
 
             )
 
@@ -907,10 +611,7 @@ def find_duplicate(
                 score += 45
 
                 reasons.append(
-
-                    f"Very close location "
-                    f"({round(distance)} meters)"
-
+                    f"Very close location ({round(distance)} meters)"
                 )
 
 
@@ -919,10 +620,7 @@ def find_duplicate(
                 score += 25
 
                 reasons.append(
-
-                    f"Nearby location "
-                    f"({round(distance)} meters)"
-
+                    f"Nearby location ({round(distance)} meters)"
                 )
 
         except Exception:
@@ -930,7 +628,7 @@ def find_duplicate(
             pass
 
 
-        # DESCRIPTION
+        # TEXT SIMILARITY
 
         similarity = text_similarity(
 
@@ -946,10 +644,7 @@ def find_duplicate(
             score += 30
 
             reasons.append(
-
-                f"Similar description "
-                f"({round(similarity * 100)}%)"
-
+                f"Similar description ({round(similarity * 100)}%)"
             )
 
 
@@ -1048,6 +743,7 @@ WORKERS = {
 
     ],
 
+
     "🚽 Drainage & Sewer Department": [
 
         "👷 Kumar | Drainage Department",
@@ -1055,6 +751,7 @@ WORKERS = {
         "👷 Imran | Drainage Department"
 
     ],
+
 
     "🗑️ Sanitation Department": [
 
@@ -1064,6 +761,7 @@ WORKERS = {
 
     ],
 
+
     "🛣️ Roads & Infrastructure Department": [
 
         "👷 Suresh | Roads Department",
@@ -1071,6 +769,7 @@ WORKERS = {
         "👷 Ramesh | Roads Department"
 
     ],
+
 
     "💡 Electricity Department": [
 
@@ -1080,11 +779,13 @@ WORKERS = {
 
     ],
 
+
     "🚰 Water & Emergency Department": [
 
         "👷 Emergency Water Team"
 
     ],
+
 
     "🚦 Traffic Department": [
 
@@ -1092,11 +793,13 @@ WORKERS = {
 
     ],
 
+
     "🌳 Parks & Public Works Department": [
 
         "👷 Naveen | Public Works"
 
     ],
+
 
     "🏛️ Municipal Corporation": [
 
@@ -1119,33 +822,19 @@ def get_severity(text, issue):
     high_words = [
 
         "emergency",
-
         "danger",
-
         "dangerous",
-
         "accident",
-
         "flood",
-
         "injury",
-
         "urgent",
-
         "major",
-
         "serious"
 
     ]
 
 
-    if any(
-
-        word in text
-
-        for word in high_words
-
-    ):
+    if any(word in text for word in high_words):
 
         return "🔴 High"
 
@@ -1172,16 +861,15 @@ with st.sidebar:
     st.title("🏙️ CivicFix")
 
     st.caption(
-        "Predictive Civic Intelligence Platform"
+        "AI-Powered Civic Issue Reporting Platform"
     )
-
 
     st.divider()
 
 
     language = st.selectbox(
 
-        "🌐 Language",
+        "🌐 Language / भाषा",
 
         list(LANGUAGES.keys())
 
@@ -1191,18 +879,12 @@ with st.sidebar:
     language_code = LANGUAGES[language]
 
 
-    t = get_translation(language)
-
-
     st.divider()
-
-
-    st.subheader(t["navigate"])
 
 
     page = st.radio(
 
-        "",
+        "🧭 Navigation",
 
         [
 
@@ -1227,101 +909,93 @@ with st.sidebar:
 
 if page == "📢 Citizen Portal":
 
-
-    st.title(
-        t["report_title"]
-    )
+    st.title("📢 Report a Civic Issue")
 
 
-    st.markdown(
+    st.markdown("""
 
-        """
+    <div class="info-box">
 
-<div class="info-box">
+    📱 Enter details →
+    📸 Upload evidence →
+    🤖 Verify image →
+    📍 Capture GPS →
+    🗺️ Confirm location →
+    🔁 Check duplicates →
+    🚀 Submit
 
-📱 Select problem → 📸 Upload photo →
-🤖 Verify image → 📍 Capture GPS →
-🔁 Check duplicates → Submit
+    </div>
 
-</div>
-
-""",
-
-        unsafe_allow_html=True
-
-    )
+    """, unsafe_allow_html=True)
 
 
+    # =====================================================
     # PHONE
+    # =====================================================
 
-    st.subheader(
-        t["citizen_details"]
-    )
+    st.subheader("📱 Citizen Details")
 
 
     phone = st.text_input(
 
-        t["phone"],
+        "Your Phone Number",
 
-        placeholder=t["phone_placeholder"]
+        placeholder="Enter your 10 digit mobile number"
 
     )
 
 
+    # =====================================================
     # ISSUE
+    # =====================================================
 
     st.divider()
 
 
-    st.subheader(
-        t["problem"]
-    )
+    st.subheader("🚨 What is the Civic Problem?")
 
 
     issue_choice = st.selectbox(
 
-        t["select_issue"],
+        "Select Civic Issue",
 
         ISSUES
 
     )
 
 
+    # =====================================================
     # VOICE
+    # =====================================================
 
     st.divider()
 
 
-    st.subheader(
-        t["voice"]
+    st.subheader("🎤 Speak Your Complaint")
+
+
+    st.info(
+        "Voice recording is optional. You can speak in the selected language."
     )
 
 
     audio = st.audio_input(
 
-        t["record_voice"]
+        "🎤 Record your complaint"
 
     )
 
 
     if audio is not None:
 
-
         st.audio(audio)
 
 
         if VOICE_AVAILABLE:
 
-
-            if st.button(
-
-                t["convert_voice"]
-
-            ):
-
+            if st.button("📝 Convert Voice to Text"):
 
                 try:
-
 
                     recognizer = sr.Recognizer()
 
@@ -1337,29 +1011,14 @@ if page == "📢 Citizen Portal":
 
                     ) as temp_audio:
 
-
-                        temp_audio.write(
-
-                            audio_bytes
-
-                        )
-
+                        temp_audio.write(audio_bytes)
 
                         temp_path = temp_audio.name
 
 
-                    with sr.AudioFile(
+                    with sr.AudioFile(temp_path) as source:
 
-                        temp_path
-
-                    ) as source:
-
-
-                        audio_data = recognizer.record(
-
-                            source
-
-                        )
+                        audio_data = recognizer.record(source)
 
 
                     result = recognizer.recognize_google(
@@ -1384,71 +1043,58 @@ if page == "📢 Citizen Portal":
 
 
                     st.success(
-
                         "✅ Voice converted successfully!"
-
                     )
 
 
                     st.rerun()
 
 
-                except Exception:
-
+                except Exception as e:
 
                     st.warning(
-
-                        "⚠️ Voice could not be converted."
-
+                        "⚠️ Voice could not be converted. Please try again."
                     )
 
 
+    # =====================================================
     # DESCRIPTION
+    # =====================================================
 
     st.divider()
 
 
-    st.subheader(
-        t["details"]
-    )
+    st.subheader("📝 Additional Details")
 
 
     description = st.text_area(
 
-        t["description"],
+        "Describe the problem",
 
         value=st.session_state.voice_text,
 
-        placeholder=t["description_placeholder"],
+        placeholder="You can type additional details here...",
 
         height=120
 
     )
 
 
+    # =====================================================
     # IMAGE
+    # =====================================================
 
     st.divider()
 
 
-    st.subheader(
-        t["upload"]
-    )
+    st.subheader("📸 Upload Evidence")
 
 
     image_file = st.file_uploader(
 
-        t["upload_image"],
+        "Upload a photo of the civic problem",
 
-        type=[
-
-            "jpg",
-
-            "jpeg",
-
-            "png"
-
-        ]
+        type=["jpg", "jpeg", "png"]
 
     )
 
@@ -1457,16 +1103,13 @@ if page == "📢 Citizen Portal":
 
 
         current_hash = get_image_hash(
-
             image_file
-
         )
 
 
-        # RESET NEW IMAGE
+        # RESET IF NEW IMAGE
 
         if st.session_state.image_hash != current_hash:
-
 
             st.session_state.image_ai_issue = None
 
@@ -1480,9 +1123,7 @@ if page == "📢 Citizen Portal":
 
 
         image = Image.open(
-
             image_file
-
         ).convert("RGB")
 
 
@@ -1497,20 +1138,14 @@ if page == "📢 Citizen Portal":
         )
 
 
-        # SECURITY CHECK
+        # =================================================
+        # SECURITY
+        # =================================================
 
-        st.markdown(
-
-            "### 🛡️ Evidence Security Check"
-
-        )
+        st.markdown("### 🛡️ Evidence Security Check")
 
 
-        if st.button(
-
-            "🛡️ Check Evidence Security"
-
-        ):
+        if st.button("🛡️ Check Evidence Security"):
 
 
             security_result = check_image_security(
@@ -1532,89 +1167,73 @@ if page == "📢 Citizen Portal":
             )
 
 
+            st.session_state.image_metadata = (
+
+                get_image_metadata(image)
+
+            )
+
+
             if "Blocked" in security_result["status"]:
 
-
                 st.error(
-
-                    "🔴 Exact duplicate image detected!"
-
+                    "🔴 This exact image was already used in another complaint."
                 )
 
 
             elif "High Risk" in security_result["status"]:
 
-
                 st.error(
-
                     "🔴 Evidence flagged as high risk."
-
                 )
 
 
             elif "Suspicious" in security_result["status"]:
 
-
                 st.warning(
-
-                    "🟡 Evidence requires manual review."
-
+                    "🟡 Evidence requires authority review."
                 )
 
 
             else:
 
-
                 st.success(
-
-                    "🟢 Basic security checks passed."
-
+                    "🟢 Basic evidence security checks passed."
                 )
 
 
             if security_result["reasons"]:
 
-
-                st.markdown(
-
-                    "#### Security Findings"
-
-                )
-
+                st.markdown("#### Security Findings")
 
                 for reason in security_result["reasons"]:
 
-                    st.write(
-                        f"• {reason}"
-                    )
+                    st.write(f"• {reason}")
 
 
+        # =================================================
         # IMAGE AI
+        # =================================================
 
         st.divider()
+
+
+        st.markdown("### 🤖 AI Image Verification")
 
 
         if IMAGE_AI_AVAILABLE:
 
 
-            if st.button(
-
-                t["check_image"]
-
-            ):
+            if st.button("🤖 Check Image Matches Issue"):
 
 
                 with st.spinner(
-
-                    "🤖 AI is checking the image..."
-
+                    "🤖 AI is analyzing the image..."
                 ):
 
 
                     results = analyze_civic_image(
-
                         image
-
                     )
 
 
@@ -1624,11 +1243,7 @@ if page == "📢 Citizen Portal":
                     best_result = results[0]
 
 
-                    image_label = (
-
-                        best_result["label"]
-
-                    )
+                    image_label = best_result["label"]
 
 
                     confidence = round(
@@ -1640,13 +1255,9 @@ if page == "📢 Citizen Portal":
                     )
 
 
-                    detected_issue = (
+                    detected_issue = image_label_to_issue(
 
-                        image_label_to_issue(
-
-                            image_label
-
-                        )
+                        image_label
 
                     )
 
@@ -1665,68 +1276,54 @@ if page == "📢 Citizen Portal":
                     )
 
 
+                    st.write(
+                        "🤖 AI Detected:",
+                        detected_issue
+                    )
+
+
+                    st.write(
+                        "📊 Confidence:",
+                        f"{confidence}%"
+                    )
+
+
                     if detected_issue == issue_choice:
 
-
                         st.success(
-
-                            "✅ Image matches the selected issue!"
-
+                            "✅ Image matches the selected civic issue!"
                         )
-
 
                     else:
 
-
                         st.error(
-
-                            "❌ Image does not match selected issue!"
-
+                            "❌ Image does not match the selected issue."
                         )
 
 
                         st.write(
-
                             "Selected:",
-
                             issue_choice
-
                         )
 
 
                         st.write(
-
                             "AI Detected:",
-
                             detected_issue
-
                         )
-
-
-                    st.caption(
-
-                        f"AI Confidence: {confidence}%"
-
-                    )
 
 
                 else:
 
-
                     st.warning(
-
-                        "⚠️ AI could not analyze image."
-
+                        "⚠️ AI could not analyze this image."
                     )
 
 
         else:
 
-
             st.warning(
-
                 "⚠️ Image AI package is not available."
-
             )
 
 
@@ -1737,13 +1334,11 @@ if page == "📢 Citizen Portal":
     st.divider()
 
 
-    st.subheader(
-        t["gps"]
-    )
+    st.subheader("📍 Mandatory GPS Location")
 
 
     st.warning(
-        t["gps_warning"]
+        "⚠️ Allow location permission so the worker can reach the exact location."
     )
 
 
@@ -1767,67 +1362,35 @@ if page == "📢 Citizen Portal":
             try:
 
 
-                lat = location.get(
+                lat = location.get("latitude")
 
-                    "latitude"
-
-                )
+                lon = location.get("longitude")
 
 
-                lon = location.get(
-
-                    "longitude"
-
-                )
+                if lat is not None and lon is not None:
 
 
-                if (
+                    st.session_state.latitude = float(lat)
 
-                    lat is not None
-
-                    and
-
-                    lon is not None
-
-                ):
-
-
-                    st.session_state.latitude = (
-
-                        float(lat)
-
-                    )
-
-
-                    st.session_state.longitude = (
-
-                        float(lon)
-
-                    )
+                    st.session_state.longitude = float(lon)
 
 
             except Exception:
 
-
                 st.warning(
-
                     "⚠️ GPS could not be processed."
-
                 )
 
 
     else:
 
-
         st.error(
-
-            "❌ GPS package missing."
-
+            "❌ GPS package missing. Install streamlit-geolocation."
         )
 
 
     # =====================================================
-    # GPS RESULTS + MAP
+    # GPS RESULTS + REAL MAP
     # =====================================================
 
     if (
@@ -1847,9 +1410,7 @@ if page == "📢 Citizen Portal":
 
 
         st.success(
-
             "✅ GPS Location Captured Successfully!"
-
         )
 
 
@@ -1857,53 +1418,68 @@ if page == "📢 Citizen Portal":
 
 
         col1.metric(
-
             "📍 Latitude",
-
             f"{lat:.6f}"
-
         )
 
 
         col2.metric(
-
             "📍 Longitude",
-
             f"{lon:.6f}"
+        )
+
+
+        st.markdown("### 🗺️ Exact Complaint Location")
+
+
+        # REAL FOLIUM MAP
+
+        civic_map = folium.Map(
+
+            location=[lat, lon],
+
+            zoom_start=18,
+
+            control_scale=True
 
         )
 
 
-        st.markdown(
+        folium.Marker(
 
-            "### 🗺️ Complaint Location"
+            [lat, lon],
 
-        )
+            popup="📍 CivicFix Complaint Location",
+
+            tooltip="Complaint Location",
+
+            icon=folium.Icon(
+
+                icon="info-sign"
+
+            )
+
+        ).add_to(civic_map)
 
 
-        map_data = {
+        st_folium(
 
-            "lat": [lat],
+            civic_map,
 
-            "lon": [lon]
+            width=None,
 
-        }
+            height=450,
 
-
-        st.map(
-
-            map_data,
-
-            zoom=17
+            returned_objects=[]
 
         )
 
 
         maps_url = (
 
-            f"https://www.google.com/maps/"
+            "https://www.google.com/maps/search/"
 
-            f"search/?api=1&query={lat},{lon}"
+            f"?api=1&query={lat},{lon}"
 
         )
 
@@ -1926,14 +1502,12 @@ if page == "📢 Citizen Portal":
     st.divider()
 
 
-    st.subheader(
-        t["submit_section"]
-    )
+    st.subheader("🚀 Submit Complaint")
 
 
     if st.button(
 
-        t["submit"],
+        "🚨 Submit Civic Complaint",
 
         type="primary",
 
@@ -1946,11 +1520,8 @@ if page == "📢 Citizen Portal":
 
         if not phone.strip():
 
-
             st.error(
-
                 "❌ Phone number is required."
-
             )
 
             st.stop()
@@ -1960,11 +1531,8 @@ if page == "📢 Citizen Portal":
 
         elif image_file is None:
 
-
             st.error(
-
                 "❌ Please upload an image."
-
             )
 
             st.stop()
@@ -1974,11 +1542,8 @@ if page == "📢 Citizen Portal":
 
         elif not st.session_state.image_security_checked:
 
-
             st.error(
-
                 "❌ Please complete Evidence Security Check first."
-
             )
 
             st.stop()
@@ -1986,35 +1551,21 @@ if page == "📢 Citizen Portal":
 
         # BLOCKED
 
-        elif "Blocked" in (
-
-            st.session_state.image_security_status
-
-        ):
-
+        elif "Blocked" in st.session_state.image_security_status:
 
             st.error(
-
-                "❌ Submission blocked because this image was already used."
-
+                "❌ Submission blocked because this exact image was already used."
             )
 
             st.stop()
 
 
-        # AI CHECK
+        # IMAGE AI
 
-        elif (
-
-            st.session_state.image_ai_issue is None
-
-        ):
-
+        elif st.session_state.image_ai_issue is None:
 
             st.error(
-
-                "❌ Please run Image AI Check first."
-
+                "❌ Please check whether the image matches the selected issue."
             )
 
             st.stop()
@@ -2030,11 +1581,8 @@ if page == "📢 Citizen Portal":
 
         ):
 
-
             st.error(
-
-                "❌ Submission blocked! Image does not match issue."
-
+                "❌ Submission blocked because the image does not match the selected issue."
             )
 
             st.stop()
@@ -2052,11 +1600,8 @@ if page == "📢 Citizen Portal":
 
         ):
 
-
             st.error(
-
                 "❌ GPS location is required."
-
             )
 
             st.stop()
@@ -2089,51 +1634,43 @@ if page == "📢 Citizen Portal":
 
                 f"""
 
-⚠️ Possible duplicate complaint detected!
+                ⚠️ Possible duplicate complaint detected!
 
-Existing Complaint: {existing['id']}
+                Existing Complaint: {existing['id']}
 
-Issue: {existing['issue']}
+                Issue: {existing['issue']}
 
-Duplicate Score: {duplicate['score']}
+                Duplicate Score: {duplicate['score']}
 
-"""
+                """
 
             )
 
 
             st.markdown(
-
                 "### Why it may be a duplicate:"
-
             )
 
 
             for reason in duplicate["reasons"]:
 
-                st.write(
-
-                    f"• {reason}"
-
-                )
+                st.write(f"• {reason}")
 
 
             st.error(
-
                 "❌ Duplicate complaint submission blocked."
-
             )
 
 
             st.stop()
 
 
-        # CREATE COMPLAINT
+        # =================================================
+        # CREATE REPORT
+        # =================================================
 
         department = get_department(
-
             issue_choice
-
         )
 
 
@@ -2159,53 +1696,41 @@ Duplicate Score: {duplicate['score']}
 
         complaint_id = (
 
-            "HACF-"
+            "CF-"
 
-            +
+            + datetime.now().strftime("%Y%m%d")
 
-            str(
+            + "-"
 
-                random.randint(
-
-                    100000,
-
-                    999999
-
-                )
-
-            )
+            + str(random.randint(1000, 9999))
 
         )
 
 
-        verification_status = (
-
-            "🟢 Basic Verification Passed"
-
-        )
-
-
-        if "Suspicious" in (
-
-            st.session_state.image_security_status
-
-        ):
+        if "Suspicious" in st.session_state.image_security_status:
 
             verification_status = (
-
                 "🟡 Manual Review Required"
+            )
 
+        elif "High Risk" in st.session_state.image_security_status:
+
+            verification_status = (
+                "🔴 High Risk Review"
+            )
+
+        else:
+
+            verification_status = (
+                "🟢 Basic Verification Passed"
             )
 
 
         report = {
 
-
             "id": complaint_id,
 
-
             "phone": phone,
-
 
             "description":
 
@@ -2213,7 +1738,9 @@ Duplicate Score: {duplicate['score']}
 
                 if description.strip()
 
-                else "No additional description.",
+                else
+
+                "No additional description.",
 
 
             "voice_text":
@@ -2222,32 +1749,22 @@ Duplicate Score: {duplicate['score']}
 
                 if st.session_state.voice_text
 
-                else "No voice text provided.",
+                else
+
+                "No voice text provided.",
 
 
             "issue": issue_choice,
 
-
             "department": department,
-
 
             "severity": severity,
 
+            "latitude": st.session_state.latitude,
 
-            "latitude":
+            "longitude": st.session_state.longitude,
 
-                st.session_state.latitude,
-
-
-            "longitude":
-
-                st.session_state.longitude,
-
-
-            "image_hash":
-
-                st.session_state.image_hash,
-
+            "image_hash": st.session_state.image_hash,
 
             "image_confidence":
 
@@ -2259,49 +1776,30 @@ Duplicate Score: {duplicate['score']}
                 verification_status,
 
 
-            "status":
+            "status": "Submitted",
 
-                "Submitted",
-
-
-            "worker":
-
-                "Not Assigned",
+            "worker": "Not Assigned",
 
 
-            "date":
-
-                datetime.now().strftime(
-
-                    "%d-%m-%Y %I:%M %p"
-
-                )
+            "date": datetime.now().strftime(
+                "%d-%m-%Y %I:%M %p"
+            )
 
         }
 
 
-        # ADD REPORT
-
         st.session_state.reports.append(
-
             report
-
         )
 
 
-        # SAVE PERMANENTLY
-
         save_reports(
-
             st.session_state.reports
-
         )
 
 
         st.success(
-
             "🎉 Complaint Submitted Successfully!"
-
         )
 
 
@@ -2312,24 +1810,23 @@ Duplicate Score: {duplicate['score']}
 
             f"""
 
-<div class="success-box">
+            <div class="success-box">
 
-<h2>🆔 Complaint ID: {complaint_id}</h2>
+            <h2>🆔 Complaint ID: {complaint_id}</h2>
 
-📅 <b>Date:</b> {report['date']}<br><br>
+            📅 <b>Date:</b> {report['date']}<br><br>
 
-📢 <b>Issue:</b> {report['issue']}<br><br>
+            📢 <b>Issue:</b> {issue_choice}<br><br>
 
-🏛️ <b>Department:</b> {report['department']}<br><br>
+            🏛️ <b>Department:</b> {department}<br><br>
 
-🚨 <b>Severity:</b> {report['severity']}<br><br>
+            🚨 <b>Severity:</b> {severity}<br><br>
 
-🛡️ <b>Verification:</b>
-{report['verification_status']}
+            🛡️ <b>Verification:</b> {verification_status}
 
-</div>
+            </div>
 
-""",
+            """,
 
             unsafe_allow_html=True
 
@@ -2343,23 +1840,15 @@ Duplicate Score: {duplicate['score']}
 elif page == "🔎 Track Complaint":
 
 
-    st.title(
-        "🔎 Track Your Complaint"
-    )
+    st.title("🔎 Track Your Complaint")
 
 
     complaint_id = st.text_input(
-
         "Enter Complaint ID"
-
     )
 
 
-    if st.button(
-
-        "🔎 Track Complaint"
-
-    ):
+    if st.button("🔎 Track Complaint"):
 
 
         found = None
@@ -2368,16 +1857,7 @@ elif page == "🔎 Track Complaint":
         for report in st.session_state.reports:
 
 
-            if (
-
-                report["id"].lower()
-
-                ==
-
-                complaint_id.lower()
-
-            ):
-
+            if report["id"].lower() == complaint_id.lower():
 
                 found = report
 
@@ -2387,80 +1867,84 @@ elif page == "🔎 Track Complaint":
         if found:
 
 
-            st.success(
-
-                "✅ Complaint Found!"
-
-            )
+            st.success("✅ Complaint Found!")
 
 
-            st.write(
-                "📢 Issue:",
-                found["issue"]
-            )
+            st.write("📢 Issue:", found["issue"])
 
+            st.write("🏛️ Department:", found["department"])
+
+            st.write("🚨 Severity:", found["severity"])
 
             st.write(
-                "🏛️ Department:",
-                found["department"]
+                "🛡️ Verification:",
+                found.get(
+                    "verification_status",
+                    "Not Available"
+                )
             )
 
+            st.write("📌 Status:", found["status"])
+
+            st.write("👷 Worker:", found["worker"])
 
             st.write(
-                "🚨 Severity:",
-                found["severity"]
-            )
-
-
-            st.write(
-                "📌 Status:",
-                found["status"]
-            )
-
-
-            st.write(
-                "👷 Worker:",
-                found["worker"]
-            )
-
-
-            st.write(
-                "📅 Date:",
+                "📅 Submitted:",
                 found["date"]
             )
 
 
-            maps_url = (
+            # MAP
 
-                f"https://www.google.com/maps/"
+            track_map = folium.Map(
 
-                f"search/?api=1&query="
+                location=[
 
-                f"{found['latitude']},"
+                    found["latitude"],
 
-                f"{found['longitude']}"
+                    found["longitude"]
+
+                ],
+
+                zoom_start=17
 
             )
 
 
-            st.link_button(
+            folium.Marker(
 
-                "🗺️ View Complaint Location",
+                [
 
-                maps_url,
+                    found["latitude"],
 
-                width="stretch"
+                    found["longitude"]
+
+                ],
+
+                popup=found["id"],
+
+                tooltip="Complaint Location"
+
+            ).add_to(track_map)
+
+
+            st_folium(
+
+                track_map,
+
+                width=None,
+
+                height=400,
+
+                returned_objects=[]
 
             )
 
 
         else:
 
-
             st.error(
-
                 "❌ Complaint ID not found."
-
             )
 
 
@@ -2471,9 +1955,7 @@ elif page == "🔎 Track Complaint":
 elif page == "🏛️ Authority Dashboard":
 
 
-    st.title(
-        "🏛️ Authority Dashboard"
-    )
+    st.title("🏛️ Authority Dashboard")
 
 
     reports = st.session_state.reports
@@ -2487,9 +1969,7 @@ elif page == "🏛️ Authority Dashboard":
 
     pending = len([
 
-        r
-
-        for r in reports
+        r for r in reports
 
         if r["status"] == "Submitted"
 
@@ -2498,61 +1978,35 @@ elif page == "🏛️ Authority Dashboard":
 
     assigned = len([
 
-        r
-
-        for r in reports
+        r for r in reports
 
         if r["worker"] != "Not Assigned"
 
     ])
 
 
-    suspicious = len([
+    completed_count = len([
 
-        r
+        r for r in reports
 
-        for r in reports
-
-        if "Review" in r.get(
-
-            "verification_status",
-
-            ""
-
-        )
+        if "Completed" in r["status"]
 
     ])
 
 
-    col1.metric(
-        "📢 Total",
-        total
-    )
+    col1.metric("📢 Total", total)
 
+    col2.metric("⏳ Pending", pending)
 
-    col2.metric(
-        "⏳ Pending",
-        pending
-    )
+    col3.metric("👷 Assigned", assigned)
 
-
-    col3.metric(
-        "👷 Assigned",
-        assigned
-    )
-
-
-    col4.metric(
-        "🛡️ Review Required",
-        suspicious
-    )
+    col4.metric("✅ Completed", completed_count)
 
 
     st.divider()
 
 
     if not reports:
-
 
         st.info(
             "No complaints submitted yet."
@@ -2573,70 +2027,81 @@ elif page == "🏛️ Authority Dashboard":
 
 
                 st.write(
-
                     "📝 Description:",
-
                     report["description"]
-
                 )
 
 
                 st.write(
-
                     "🎤 Voice:",
-
-                    report["voice_text"]
-
+                    report.get("voice_text", "")
                 )
 
 
                 st.write(
-
                     "🚨 Severity:",
-
                     report["severity"]
-
                 )
 
 
                 st.write(
+                    "🛡️ Verification:",
+                    report.get(
+                        "verification_status",
+                        "Not Available"
+                    )
+                )
 
+
+                st.write(
                     "📌 Status:",
-
                     report["status"]
+                )
+
+
+                # MAP
+
+                authority_map = folium.Map(
+
+                    location=[
+
+                        report["latitude"],
+
+                        report["longitude"]
+
+                    ],
+
+                    zoom_start=16
 
                 )
 
 
-                st.write(
+                folium.Marker(
 
-                    "📍 Location:",
+                    [
 
-                    f"{report['latitude']}, "
+                        report["latitude"],
 
-                    f"{report['longitude']}"
+                        report["longitude"]
 
-                )
+                    ],
 
+                    popup=report["id"]
 
-                maps_url = (
-
-                    f"https://www.google.com/maps/"
-
-                    f"search/?api=1&query="
-
-                    f"{report['latitude']},"
-
-                    f"{report['longitude']}"
-
-                )
+                ).add_to(authority_map)
 
 
-                st.link_button(
+                st_folium(
 
-                    "🗺️ View on Google Maps",
+                    authority_map,
 
-                    maps_url
+                    width=None,
+
+                    height=300,
+
+                    key=f"authority_map_{i}",
+
+                    returned_objects=[]
 
                 )
 
@@ -2662,23 +2127,18 @@ elif page == "🏛️ Authority Dashboard":
 
 
                 current_worker = report.get(
-
                     "worker",
-
                     "Not Assigned"
-
                 )
 
 
-                index = 0
+                current_index = 0
 
 
                 if current_worker in worker_options:
 
-                    index = worker_options.index(
-
+                    current_index = worker_options.index(
                         current_worker
-
                     )
 
 
@@ -2688,7 +2148,7 @@ elif page == "🏛️ Authority Dashboard":
 
                     worker_options,
 
-                    index=index,
+                    index=current_index,
 
                     key=f"worker_{i}"
 
@@ -2697,7 +2157,7 @@ elif page == "🏛️ Authority Dashboard":
 
                 if st.button(
 
-                    "✅ Save Worker Assignment",
+                    "✅ Assign Worker",
 
                     key=f"assign_{i}"
 
@@ -2713,16 +2173,12 @@ elif page == "🏛️ Authority Dashboard":
 
 
                     save_reports(
-
                         st.session_state.reports
-
                     )
 
 
                     st.success(
-
                         "✅ Worker Assigned!"
-
                     )
 
 
@@ -2736,9 +2192,7 @@ elif page == "🏛️ Authority Dashboard":
 elif page == "👷 Worker Portal":
 
 
-    st.title(
-        "👷 Worker Portal"
-    )
+    st.title("👷 Worker Portal")
 
 
     assigned_reports = [
@@ -2756,75 +2210,100 @@ elif page == "👷 Worker Portal":
 
 
         st.warning(
-
             "⚠️ No complaints assigned yet."
-
         )
 
 
     else:
 
 
-        for i, report in enumerate(
-
-            assigned_reports
-
-        ):
+        for i, report in enumerate(assigned_reports):
 
 
             st.divider()
 
 
             st.subheader(
-
                 f"🆔 {report['id']}"
-
             )
 
 
             st.write(
-
                 "📢 Issue:",
-
                 report["issue"]
-
             )
 
 
             st.write(
-
                 "📝 Description:",
-
                 report["description"]
-
             )
 
 
             st.write(
-
                 "🚨 Severity:",
-
                 report["severity"]
-
             )
 
 
             st.write(
-
                 "👷 Worker:",
-
                 report["worker"]
+            )
+
+
+            # MAP
+
+            worker_map = folium.Map(
+
+                location=[
+
+                    report["latitude"],
+
+                    report["longitude"]
+
+                ],
+
+                zoom_start=17
+
+            )
+
+
+            folium.Marker(
+
+                [
+
+                    report["latitude"],
+
+                    report["longitude"]
+
+                ],
+
+                popup="Work Location"
+
+            ).add_to(worker_map)
+
+
+            st_folium(
+
+                worker_map,
+
+                width=None,
+
+                height=350,
+
+                key=f"worker_map_{i}",
+
+                returned_objects=[]
 
             )
 
 
             maps_url = (
 
-                "https://www.google.com/maps/dir/?api=1"
+                "https://www.google.com/maps/dir/"
 
-                f"&destination={report['latitude']},"
-
-                f"{report['longitude']}"
+                f"?api=1&destination={report['latitude']},{report['longitude']}"
 
             )
 
@@ -2854,11 +2333,8 @@ elif page == "👷 Worker Portal":
 
 
             current_status = report.get(
-
                 "status",
-
                 "Assigned"
-
             )
 
 
@@ -2868,9 +2344,7 @@ elif page == "👷 Worker Portal":
             if current_status in status_options:
 
                 status_index = status_options.index(
-
                     current_status
-
                 )
 
 
@@ -2900,16 +2374,12 @@ elif page == "👷 Worker Portal":
 
 
                 save_reports(
-
                     st.session_state.reports
-
                 )
 
 
                 st.success(
-
                     "✅ Status Updated!"
-
                 )
 
 
@@ -2923,9 +2393,7 @@ elif page == "👷 Worker Portal":
 elif page == "🧠 Civic Intelligence":
 
 
-    st.title(
-        "🧠 Civic Intelligence"
-    )
+    st.title("🧠 Civic Intelligence")
 
 
     reports = st.session_state.reports
@@ -2935,9 +2403,7 @@ elif page == "🧠 Civic Intelligence":
 
 
         st.info(
-
             "📊 Submit complaints first."
-
         )
 
 
@@ -2962,16 +2428,12 @@ elif page == "🧠 Civic Intelligence":
 
 
         st.subheader(
-
             "📊 Complaint Analysis"
-
         )
 
 
         st.bar_chart(
-
             issue_count
-
         )
 
 
@@ -2986,9 +2448,7 @@ elif page == "🧠 Civic Intelligence":
 
         high_priority = len([
 
-            r
-
-            for r in reports
+            r for r in reports
 
             if "High" in r["severity"]
 
@@ -2997,22 +2457,9 @@ elif page == "🧠 Civic Intelligence":
 
         completed = len([
 
-            r
-
-            for r in reports
+            r for r in reports
 
             if "Completed" in r["status"]
-
-        ])
-
-
-        pending = len([
-
-            r
-
-            for r in reports
-
-            if r["status"] == "Submitted"
 
         ])
 
@@ -3021,13 +2468,11 @@ elif page == "🧠 Civic Intelligence":
 
 
         st.subheader(
-
             "🧠 Civic Intelligence Insights"
-
         )
 
 
-        col1, col2, col3, col4 = st.columns(4)
+        col1, col2, col3 = st.columns(3)
 
 
         col1.metric(
@@ -3050,15 +2495,6 @@ elif page == "🧠 Civic Intelligence":
 
         col3.metric(
 
-            "⏳ Pending",
-
-            pending
-
-        )
-
-
-        col4.metric(
-
             "✅ Completed",
 
             completed
@@ -3068,24 +2504,94 @@ elif page == "🧠 Civic Intelligence":
 
         st.warning(
 
-            f"🔍 Most common issue: {most_common}"
+            f"🔍 Most common civic issue: {most_common}"
 
         )
 
 
-        st.markdown(
+        # HOTSPOT MAP
+
+        st.divider()
+
+
+        st.subheader(
+            "🔥 Civic Complaint Map"
+        )
+
+
+        first_report = reports[0]
+
+
+        intelligence_map = folium.Map(
+
+            location=[
+
+                first_report["latitude"],
+
+                first_report["longitude"]
+
+            ],
+
+            zoom_start=13
+
+        )
+
+
+        for report in reports:
+
+
+            popup_text = f"""
+
+            <b>{report['id']}</b><br>
+
+            {report['issue']}<br>
+
+            Status: {report['status']}
 
             """
 
-### 🔮 Future Predictive Features
 
-- 🔁 Advanced duplicate complaint detection
-- 📍 Civic hotspot detection
-- 🔮 Recurring problem prediction
-- ❤️ Civic Health Score
-- 📊 Department performance analysis
-- 🤖 Advanced AI-generated image detection
+            folium.Marker(
 
-"""
+                [
+
+                    report["latitude"],
+
+                    report["longitude"]
+
+                ],
+
+                popup=popup_text,
+
+                tooltip=report["issue"]
+
+            ).add_to(intelligence_map)
+
+
+        st_folium(
+
+            intelligence_map,
+
+            width=None,
+
+            height=500,
+
+            returned_objects=[]
 
         )
+
+
+        st.markdown("""
+
+### 🔮 Future CivicFix Features
+
+- 🔥 Automatic civic hotspot detection
+- 🔁 Advanced duplicate complaint detection
+- 📍 Location-based complaint clustering
+- 🤖 Advanced AI-generated image detection
+- 🔮 Recurring civic problem prediction
+- ❤️ Civic Health Score
+- 📊 Department performance analysis
+- 🚨 Emergency priority prediction
+
+        """)
