@@ -1,0 +1,8 @@
+streamlit
+Pillow
+SpeechRecognition
+streamlit-geolocation
+transformers
+torch
+torchvision
+ImageHash
